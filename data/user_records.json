@@ -1,0 +1,578 @@
+[
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0001",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: what were the last symptoms of ramesh",
+    "raw_text": "User: what were the last symptoms of ramesh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:09:46",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:09:46"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0002",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: what were the last symptoms of Ramesh from the history",
+    "raw_text": "User: what were the last symptoms of Ramesh from the history",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:15:33",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:15:33"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0003",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: what was the last symptom for Ramesh",
+    "raw_text": "User: what was the last symptom for Ramesh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:20:36",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:20:36"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0004",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: what was the last symptom of Ramesh",
+    "raw_text": "User: what was the last symptom of Ramesh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:25:09",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:25:09"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0005",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: what are the last symptoms of ramesh",
+    "raw_text": "User: what are the last symptoms of ramesh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:26:29",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:26:29"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0006",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: what were ramesh's last symptopms",
+    "raw_text": "User: what were ramesh's last symptopms",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:30:17",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-25T18:30:17"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0007",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: show me all details for the patient",
+    "raw_text": "User: show me all details for the patient",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:31:06",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-25T18:31:06"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0008",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: show me all test results",
+    "raw_text": "User: show me all test results",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:31:59",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-25T18:31:59"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0009",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: show me all test results",
+    "raw_text": "User: show me all test results",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:34:30",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-25T18:34:30"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0010",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Appointment: show me current appointments",
+    "raw_text": "User: show me current appointments",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-25T18:35:03",
+      "entry_type": "appointment",
+      "captured_at": "2026-05-25T18:35:03"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0011",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: does she have any appointments",
+    "raw_text": "User: does she have any appointments",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T01:50:11",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T01:50:11"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0012",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: what was her last appointment",
+    "raw_text": "User: what was her last appointment",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T01:51:13",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T01:51:13"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0013",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: any lab reports in history?",
+    "raw_text": "User: any lab reports in history?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T01:55:23",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-31T01:55:23"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0014",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: hello",
+    "raw_text": "User: hello",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:01:28",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:01:28"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0015",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: any lab reports in history?",
+    "raw_text": "User: any lab reports in history?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:02:02",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-31T02:02:02"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0016",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: hello",
+    "raw_text": "User: hello",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:06:48",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:06:48"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0017",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: which doctor should I consult for my stomach ache?",
+    "raw_text": "User: which doctor should I consult for my stomach ache?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:12:45",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:12:45"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0018",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Can you describe your stomach ache symptoms in more detail?",
+    "raw_text": "User: Can you describe your stomach ache symptoms in more detail?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:16:26",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:16:26"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0019",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Would you like some general advice on managing stomach ache symptoms until you can see a doctor?",
+    "raw_text": "User: Would you like some general advice on managing stomach ache symptoms until you can see a doctor?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:17:35",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:17:35"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0020",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: yes",
+    "raw_text": "User: yes",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:18:16",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:18:16"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0021",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: what should he patient do now",
+    "raw_text": "User: what should he patient do now",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:25:27",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:25:27"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0022",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Add a note to Anjali Mehra's medical record about her current stomach ache symptoms and general advice provided.",
+    "raw_text": "User: Add a note to Anjali Mehra's medical record about her current stomach ache symptoms and general advice provided.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:36:40",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:36:40"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0023",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: any appointments?",
+    "raw_text": "User: any appointments?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:39:32",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:39:32"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0024",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Add a note to Anjali Mehra's record summarizing her current treatment plan and advice for symptomatic management and rest.",
+    "raw_text": "User: Add a note to Anjali Mehra's record summarizing her current treatment plan and advice for symptomatic management and rest.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:47:21",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:47:21"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0025",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: what next",
+    "raw_text": "User: what next",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:48:27",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:48:27"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0026",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Please schedule a follow-up appointment for Anjali Mehra in 5 days to reassess her condition if symptoms persist or worsen.",
+    "raw_text": "User: Please schedule a follow-up appointment for Anjali Mehra in 5 days to reassess her condition if symptoms persist or worsen.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:52:52",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:52:52"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0027",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Please specify a preferred doctor or a date range for scheduling Anjali Mehra's follow-up appointment in 5 days.",
+    "raw_text": "User: Please specify a preferred doctor or a date range for scheduling Anjali Mehra's follow-up appointment in 5 days.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:54:37",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:54:37"
+    }
+  },
+  {
+    "patient_id": "user-medical-anjali-mehra-0028",
+    "name": "Anjali Mehra",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: last symptom",
+    "raw_text": "User: last symptom",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T02:59:43",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T02:59:43"
+    }
+  },
+  {
+    "patient_id": "user-medical-david-thompson-0029",
+    "name": "David Thompson",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: show his appointments",
+    "raw_text": "User: show his appointments",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T03:04:16",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T03:04:16"
+    }
+  },
+  {
+    "patient_id": "user-medical-david-thompson-0030",
+    "name": "David Thompson",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Please add a note to David Thompson's record about increasing metformin dosage to 1000mg BID.",
+    "raw_text": "User: Please add a note to David Thompson's record about increasing metformin dosage to 1000mg BID.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T03:04:42",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T03:04:42"
+    }
+  },
+  {
+    "patient_id": "user-medical-david-thompson-0031",
+    "name": "David Thompson",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: show all the notes",
+    "raw_text": "User: show all the notes",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T03:11:17",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-31T03:11:17"
+    }
+  },
+  {
+    "patient_id": "user-medical-david-thompson-0032",
+    "name": "David Thompson",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: test",
+    "raw_text": "User: test",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T03:16:11",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-31T03:16:11"
+    }
+  }
+]

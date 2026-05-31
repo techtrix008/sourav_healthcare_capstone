@@ -1,0 +1,44 @@
+[
+  {
+    "doctor_id": "D001",
+    "name": "Dr. Meera Iyer",
+    "specialty": "Nephrologist",
+    "location": "Bangalore",
+    "available_slots": ["2026-05-25 10:00", "2026-05-26 14:30", "2026-05-28 09:30"]
+  },
+  {
+    "doctor_id": "D002",
+    "name": "Dr. Arjun Rao",
+    "specialty": "Endocrinologist",
+    "location": "Bangalore",
+    "available_slots": ["2026-05-25 11:30", "2026-05-27 16:00"]
+  },
+  {
+    "doctor_id": "D003",
+    "name": "Dr. Kavita Menon",
+    "specialty": "Cardiologist",
+    "location": "Chennai",
+    "available_slots": ["2026-05-26 12:00", "2026-05-29 15:00"]
+  },
+  {
+    "doctor_id": "D004",
+    "name": "Dr. Sameer Khanna",
+    "specialty": "General Physician",
+    "location": "Pune",
+    "available_slots": ["2026-05-25 09:00", "2026-05-25 17:00"]
+  },
+  {
+    "doctor_id": "D005",
+    "name": "Dr. Nisha Kapoor",
+    "specialty": "Gastroenterologist",
+    "location": "Pune",
+    "available_slots": ["2026-05-26 10:30", "2026-05-28 13:00"]
+  },
+  {
+    "doctor_id": "D006",
+    "name": "Dr. Vikram Shah",
+    "specialty": "Orthopedist",
+    "location": "Pune",
+    "available_slots": ["2026-05-25 15:30", "2026-05-27 10:00", "2026-05-29 11:30"]
+  }
+]
