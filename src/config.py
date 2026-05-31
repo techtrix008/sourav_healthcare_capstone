@@ -14,6 +14,7 @@ APPOINTMENTS_FILE = DATA_DIR / "appointments.json"
 USER_RECORDS_FILE = DATA_DIR / "user_records.json"
 AGENT_LOG_FILE = LOG_DIR / "agent_runs.jsonl"
 EVALUATION_LOG_FILE = LOG_DIR / "evaluation_results.jsonl"
+CHAT_HISTORY_LOG_FILE = LOG_DIR / "chat_sessions.jsonl"
 
 PDF_FILES = [
     DATA_DIR / "sample_patient.pdf",

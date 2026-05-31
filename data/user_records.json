@@ -574,5 +574,77 @@
       "entry_type": "report_review",
       "captured_at": "2026-05-31T03:16:11"
     }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0033",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Tell me about Ramesh",
+    "raw_text": "User: Tell me about Ramesh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T08:58:38",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T08:58:38"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0034",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Lets now speak about Ramsh",
+    "raw_text": "User: Lets now speak about Ramsh",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:08:56",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:08:56"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0035",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Chat Interaction: what is the time now",
+    "raw_text": "User: what is the time now",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:09:19",
+      "entry_type": "chat_interaction",
+      "captured_at": "2026-05-31T09:09:19"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0036",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: last complaints of Ramesh",
+    "raw_text": "Timestamp: 2026-05-31T09:12:47\nUser: last complaints of Ramesh\nAssistant: [Ramesh Kulkarni] Ramesh Kulkarni had no current complaints at his last routine checkup. He has a history of hypertension and is regular on medication.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:12:47",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:12:47"
+    }
   }
 ]

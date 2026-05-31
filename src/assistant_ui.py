@@ -20,8 +20,9 @@ from src.appointment_service import (
     load_doctors,
 )
 from src.chat_utils import extract_problem, is_end_session_request, is_no, is_yes
-from src.config import DISCLAIMER
+from src.config import CHAT_HISTORY_LOG_FILE, DISCLAIMER
 from src.context_types import CONTEXT_DOCTOR, CONTEXT_GENERIC, CONTEXT_PATIENT, CONTEXT_SYSTEM
+from src.logger import append_jsonl, read_jsonl
 from src.llm_service import (
     classify_query_context,
     classify_specialty,
@@ -222,7 +223,23 @@ def ensure_chat_state():
 
 def append_chat(role, content):
     """Append one message to the visible conversation transcript."""
-    st.session_state["chat_messages"].append({"role": role, "content": content})
+    st.session_state["chat_messages"].append(
+        {
+            "role": role,
+            "content": content,
+            "timestamp": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+
+
+def _display_chat_timestamp(value):
+    """Format stored ISO timestamps for compact chat display."""
+    if not value:
+        return ""
+    try:
+        return datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return str(value)
 
 
 def _patient_context_text(patient):
@@ -242,7 +259,12 @@ def _patient_context_text(patient):
 
 def _conversation_text(limit=10):
     messages = st.session_state.get("chat_messages", [])[-limit:]
-    return "\n".join(f"{message['role']}: {message['content']}" for message in messages)
+    lines = []
+    for message in messages:
+        timestamp = _display_chat_timestamp(message.get("timestamp"))
+        prefix = f"{message['role']} ({timestamp})" if timestamp else message["role"]
+        lines.append(f"{prefix}: {message['content']}")
+    return "\n".join(lines)
 
 
 def _last_result_summary(result):
@@ -366,21 +388,56 @@ def render_next_best_actions():
                         st.rerun()
 
 
-def render_close_session_controls(current_patient):
-    if not current_patient:
+def _current_context_close_label():
+    scope = st.session_state.get("current_scope", CONTEXT_GENERIC)
+    current_patient = st.session_state.get("current_patient")
+    current_doctor = st.session_state.get("current_doctor")
+    if scope == CONTEXT_PATIENT and current_patient:
+        return current_patient["Name"]
+    if scope == CONTEXT_DOCTOR and current_doctor:
+        return current_doctor["name"]
+    if scope == CONTEXT_SYSTEM:
+        return "System-wide context"
+    return "Global context"
+
+
+def archive_current_chat_session(reason="context_closed"):
+    """Persist the current visible chat before resetting the working session."""
+    messages = st.session_state.get("chat_messages") or []
+    if not messages:
+        return
+    scope = st.session_state.get("current_scope", CONTEXT_GENERIC)
+    context_label = _current_context_close_label() or scope.title()
+    append_jsonl(
+        CHAT_HISTORY_LOG_FILE,
+        {
+            "ended_at": datetime.now().isoformat(timespec="seconds"),
+            "started_at": messages[0].get("timestamp"),
+            "scope": scope,
+            "context_label": context_label,
+            "reason": reason,
+            "message_count": len(messages),
+            "messages": messages,
+        },
+    )
+
+
+def render_close_session_controls():
+    context_label = _current_context_close_label()
+    if not context_label or not st.session_state.get("chat_messages"):
         return
     if st.session_state.get("awaiting_close_confirmation"):
-        current_name_for_close = current_patient["Name"]
-        st.warning(f"Do you need any more assistance for {current_name_for_close} before closing this chat session?")
+        st.warning(f"Do you need any more assistance for {context_label} before closing this chat session?")
         close_col, keep_col = st.columns(2)
         if close_col.button("No, close session", type="primary"):
+            archive_current_chat_session()
             request_patient_chat_reset()
             st.rerun()
         if keep_col.button("Yes, keep working"):
             st.session_state["awaiting_close_confirmation"] = False
             st.session_state["close_session_requested"] = False
             st.rerun()
-    elif st.button("Close patient session"):
+    elif st.button("Close current context"):
         st.session_state["awaiting_close_confirmation"] = True
         st.rerun()
 
@@ -401,6 +458,34 @@ def render_trace_diagnostics(result):
         st.table(result.get("plan", []))
     with st.expander("Tool logs", expanded=False):
         st.json(tool_logs)
+
+
+def render_chat_history_tab():
+    """Show chat sessions that were archived when their context was closed."""
+    sessions = list(reversed(read_jsonl(CHAT_HISTORY_LOG_FILE, limit=100)))
+    st.subheader("Chat History")
+    if not sessions:
+        st.info("No closed chat sessions yet.")
+        return
+
+    for index, session in enumerate(sessions, start=1):
+        ended_at = _display_chat_timestamp(session.get("ended_at") or session.get("timestamp"))
+        started_at = _display_chat_timestamp(session.get("started_at"))
+        context_label = session.get("context_label") or "Unknown context"
+        scope = (session.get("scope") or "unknown").title()
+        title = f"{ended_at or 'Unknown end time'} | {context_label} | {scope}"
+        with st.expander(title, expanded=False):
+            if started_at:
+                st.caption(f"Started: {started_at}")
+            st.caption(f"Ended: {ended_at or 'Unknown'}")
+            for message in session.get("messages", []):
+                timestamp = _display_chat_timestamp(message.get("timestamp"))
+                role = (message.get("role") or "message").title()
+                if timestamp:
+                    st.markdown(f"**{role}** · {timestamp}")
+                else:
+                    st.markdown(f"**{role}**")
+                st.markdown(message.get("content") or "")
 
 
 def _patient_summary_for_context(patient):
@@ -473,6 +558,76 @@ def determine_query_context(prompt, current_patient):
         }
 
 
+def _canonical_patient_name(name):
+    """Resolve exact or unique partial patient references to the stored full name."""
+    if not name:
+        return None
+    exact = patient_by_name(name)
+    if exact:
+        return exact["Name"]
+
+    name_l = name.lower().strip()
+    matches = [
+        stored_name
+        for stored_name in unique_patient_names()
+        if name_l in stored_name.lower() or any(part == name_l for part in stored_name.lower().split())
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _patient_names_from_prompt(prompt):
+    """Return stored patient names directly referenced by the prompt."""
+    prompt_l = prompt.lower()
+    matches = []
+    for stored_name in unique_patient_names():
+        name_l = stored_name.lower()
+        name_parts = [part for part in name_l.split() if len(part) > 2]
+        if name_l in prompt_l or any(re.search(rf"\b{re.escape(part)}\b", prompt_l) for part in name_parts):
+            matches.append(stored_name)
+    return matches
+
+
+def _unique_canonical_patient_names(names):
+    canonical = []
+    for name in names or []:
+        stored_name = _canonical_patient_name(name)
+        if stored_name and stored_name not in canonical:
+            canonical.append(stored_name)
+    return canonical
+
+
+def normalize_patient_context_decision(prompt, decision):
+    """Collapse LLM patient-name variants before deciding whether a selector is needed."""
+    if decision.get("scope") != CONTEXT_PATIENT:
+        return decision
+
+    selected_name = _canonical_patient_name(decision.get("selected_patient_name"))
+    if not selected_name:
+        ambiguous_names = _unique_canonical_patient_names(decision.get("ambiguous_patient_names"))
+        if len(ambiguous_names) == 1:
+            selected_name = ambiguous_names[0]
+        else:
+            prompt_matches = _patient_names_from_prompt(prompt)
+            if len(prompt_matches) == 1:
+                selected_name = prompt_matches[0]
+
+    if selected_name:
+        normalized = dict(decision)
+        normalized["needs_context_selection"] = False
+        normalized["selected_patient_name"] = selected_name
+        normalized["ambiguous_patient_names"] = []
+        if selected_name.lower() not in (normalized.get("contextual_query") or "").lower():
+            normalized["contextual_query"] = f"For {selected_name}, {prompt}"
+        return normalized
+
+    normalized_candidates = _unique_canonical_patient_names(decision.get("ambiguous_patient_names"))
+    if normalized_candidates:
+        normalized = dict(decision)
+        normalized["ambiguous_patient_names"] = normalized_candidates
+        return normalized
+    return decision
+
+
 def entity_matches_for_prompt(prompt):
     store, _ = build_runtime()
     return find_entity_matches(prompt, store)
@@ -487,18 +642,105 @@ def unique_doctor_names():
     return names
 
 
+def _normalize_person_name_text(name):
+    """Normalize names for matching while preserving stored display names elsewhere."""
+    return re.sub(r"\bdr\.?\b", "", (name or "").lower()).strip()
+
+
 def doctor_by_name(name):
     if not name:
         return None
     name_l = name.lower()
+    normalized_query = _normalize_person_name_text(name)
     for doctor in load_doctors():
         if doctor.get("name", "").lower() == name_l:
             return doctor
     for doctor in load_doctors():
         doctor_name = doctor.get("name", "").lower()
-        if name_l in doctor_name or doctor_name in name_l:
+        normalized_doctor_name = _normalize_person_name_text(doctor_name)
+        if (
+            name_l in doctor_name
+            or doctor_name in name_l
+            or (normalized_query and normalized_query in normalized_doctor_name)
+            or (normalized_query and normalized_doctor_name in normalized_query)
+        ):
             return doctor
     return None
+
+
+def _canonical_doctor_name(name):
+    """Resolve exact or unique partial doctor references to the stored full name."""
+    if not name:
+        return None
+    exact = doctor_by_name(name)
+    if exact:
+        return exact["name"]
+
+    normalized_query = _normalize_person_name_text(name)
+    matches = []
+    for stored_name in unique_doctor_names():
+        normalized_stored = _normalize_person_name_text(stored_name)
+        stored_parts = [part for part in normalized_stored.split() if len(part) > 2]
+        if (
+            normalized_query in normalized_stored
+            or normalized_stored in normalized_query
+            or any(part == normalized_query for part in stored_parts)
+        ):
+            matches.append(stored_name)
+    return matches[0] if len(matches) == 1 else None
+
+
+def _doctor_names_from_prompt(prompt):
+    """Return stored doctor names directly referenced by the prompt."""
+    prompt_l = _normalize_person_name_text(prompt)
+    matches = []
+    for stored_name in unique_doctor_names():
+        normalized_stored = _normalize_person_name_text(stored_name)
+        name_parts = [part for part in normalized_stored.split() if len(part) > 2]
+        if normalized_stored in prompt_l or any(re.search(rf"\b{re.escape(part)}\b", prompt_l) for part in name_parts):
+            matches.append(stored_name)
+    return matches
+
+
+def _unique_canonical_doctor_names(names):
+    canonical = []
+    for name in names or []:
+        stored_name = _canonical_doctor_name(name)
+        if stored_name and stored_name not in canonical:
+            canonical.append(stored_name)
+    return canonical
+
+
+def normalize_doctor_context_decision(prompt, decision):
+    """Collapse LLM doctor-name variants before deciding whether a selector is needed."""
+    if decision.get("scope") != CONTEXT_DOCTOR:
+        return decision
+
+    selected_name = _canonical_doctor_name(decision.get("selected_doctor_name"))
+    if not selected_name:
+        ambiguous_names = _unique_canonical_doctor_names(decision.get("ambiguous_doctor_names"))
+        if len(ambiguous_names) == 1:
+            selected_name = ambiguous_names[0]
+        else:
+            prompt_matches = _doctor_names_from_prompt(prompt)
+            if len(prompt_matches) == 1:
+                selected_name = prompt_matches[0]
+
+    if selected_name:
+        normalized = dict(decision)
+        normalized["needs_context_selection"] = False
+        normalized["selected_doctor_name"] = selected_name
+        normalized["ambiguous_doctor_names"] = []
+        if selected_name.lower() not in (normalized.get("contextual_query") or "").lower():
+            normalized["contextual_query"] = f"For {selected_name}, {prompt}"
+        return normalized
+
+    normalized_candidates = _unique_canonical_doctor_names(decision.get("ambiguous_doctor_names"))
+    if normalized_candidates:
+        normalized = dict(decision)
+        normalized["ambiguous_doctor_names"] = normalized_candidates
+        return normalized
+    return decision
 
 
 def entity_label(entity):
@@ -867,7 +1109,8 @@ def persist_patient_chat_history(patient_name, user_message, assistant_message, 
     else:
         entry_type = "chat_interaction"
     summary = f"{entry_type.replace('_', ' ').title()}: {user_message[:180]}"
-    raw_text = f"User: {user_message}"
+    timestamp = datetime.now().isoformat(timespec="seconds")
+    raw_text = f"Timestamp: {timestamp}\nUser: {user_message}\nAssistant: {assistant_message}"
     add_patient_history_entry(patient_name, entry_type, summary, raw_text)
     refresh_runtime_data()
 
@@ -891,43 +1134,48 @@ def run_chat_turn(prompt, progress_container=None):
     append_chat("user", prompt)
 
     if st.session_state.get("awaiting_close_confirmation"):
+        scope = st.session_state.get("current_scope", CONTEXT_GENERIC)
         current_patient = st.session_state.get("current_patient")
-        patient_name = (current_patient or {}).get("Name", "this patient")
+        current_doctor = st.session_state.get("current_doctor")
+        context_label = _current_context_close_label() or "this context"
         if is_no(prompt):
-            append_chat("assistant", f"Closing the chat session for {patient_name}. Starting fresh.")
-            if current_patient:
+            append_chat("assistant", f"Closing the chat session for {context_label}. Starting fresh.")
+            if scope == CONTEXT_PATIENT and current_patient:
                 persist_patient_chat_history(
-                    patient_name,
+                    current_patient["Name"],
                     prompt,
-                    f"Closing the chat session for {patient_name}. Starting fresh.",
+                    f"Closing the chat session for {context_label}. Starting fresh.",
                 )
             st.session_state["next_best_actions"] = []
+            archive_current_chat_session()
             request_patient_chat_reset()
             return None
         if is_yes(prompt):
             st.session_state["awaiting_close_confirmation"] = False
             st.session_state["close_session_requested"] = False
-            append_chat("assistant", f"Okay, I will keep working with {patient_name}. What else can I help with?")
-            if current_patient:
+            append_chat("assistant", f"Okay, I will keep working with {context_label}. What else can I help with?")
+            if scope == CONTEXT_PATIENT and current_patient:
                 persist_patient_chat_history(
-                    patient_name,
+                    current_patient["Name"],
                     prompt,
-                    f"Okay, I will keep working with {patient_name}. What else can I help with?",
+                    f"Okay, I will keep working with {context_label}. What else can I help with?",
                 )
                 refresh_next_best_actions(current_patient)
             return None
-        append_chat("assistant", f"Please reply yes if you need more assistance for {patient_name}, or no to close this session.")
+        append_chat("assistant", f"Please reply yes if you need more assistance for {context_label}, or no to close this session.")
         return None
 
     if is_end_session_request(prompt):
+        scope = st.session_state.get("current_scope", CONTEXT_GENERIC)
         current_patient = st.session_state.get("current_patient")
-        patient_name = (current_patient or {}).get("Name", "this patient")
+        current_doctor = st.session_state.get("current_doctor")
+        context_label = _current_context_close_label() or "this context"
         st.session_state["awaiting_close_confirmation"] = True
         st.session_state["close_session_requested"] = True
-        response = f"Before I close, do you need any more assistance for {patient_name}?"
+        response = f"Before I close, do you need any more assistance for {context_label}?"
         append_chat("assistant", response)
-        if current_patient:
-            persist_patient_chat_history(patient_name, prompt, response)
+        if scope == CONTEXT_PATIENT and current_patient:
+            persist_patient_chat_history(current_patient["Name"], prompt, response)
             refresh_next_best_actions(current_patient)
         return None
 
@@ -953,6 +1201,8 @@ def run_chat_turn(prompt, progress_container=None):
     else:
         with st.spinner("Determining conversation context..."):
             context_decision = determine_query_context(prompt, current_patient)
+    context_decision = normalize_patient_context_decision(prompt, context_decision)
+    context_decision = normalize_doctor_context_decision(prompt, context_decision)
     scope = context_decision.get("scope", CONTEXT_GENERIC)
     conversation = _conversation_text()
 
@@ -1080,7 +1330,7 @@ def render_app():
     st.title("Agentic Healthcare Assistant")
     st.caption(DISCLAIMER)
 
-    tabs = st.tabs(["Assistant", "Patients", "Appointments", "Agent Trace", "Evaluation"])
+    tabs = st.tabs(["Assistant", "Chat History", "Patients", "Appointments", "Agent Trace", "Evaluation"])
 
     with tabs[0]:
         ensure_chat_state()
@@ -1216,7 +1466,7 @@ def render_app():
             render_doctor_selection_prompt()
             render_entity_selection_prompt()
             render_appointment_controls()
-            render_close_session_controls(st.session_state.get("current_patient"))
+            render_close_session_controls()
 
             render_next_best_actions()
 
@@ -1224,16 +1474,22 @@ def render_app():
                 st.markdown("#### Conversation")
             for message in reversed(st.session_state["chat_messages"]):
                 with st.chat_message(message["role"]):
+                    timestamp = _display_chat_timestamp(message.get("timestamp"))
+                    if timestamp:
+                        st.caption(timestamp)
                     st.markdown(message["content"])
 
     with tabs[1]:
-        render_patients_tab()
+        render_chat_history_tab()
 
     with tabs[2]:
-        render_appointments_tab()
+        render_patients_tab()
 
     with tabs[3]:
-        render_agent_trace_tab()
+        render_appointments_tab()
 
     with tabs[4]:
+        render_agent_trace_tab()
+
+    with tabs[5]:
         render_evaluation_tab()

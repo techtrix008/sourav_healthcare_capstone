@@ -19,11 +19,12 @@ except Exception:  # pragma: no cover - fallback keeps the app runnable without 
 class SimpleVectorStore:
     """FAISS-backed local retrieval with a deterministic hashing embedding fallback."""
 
-    def __init__(self, records: list[PatientRecord]):
+    def __init__(self, records: list[PatientRecord], min_relevance: float | None = None):
         self.records = records
         self.documents = [record.searchable_text() for record in records]
         self.vectors = [self._vectorize(document) for document in self.documents]
         self.embedding_dim = 384
+        self.min_relevance = min_relevance if min_relevance is not None else float(os.getenv("VECTOR_MIN_RELEVANCE", "0.08"))
         self.embeddings = self._build_embeddings(self.documents)
         self.index = self._build_faiss_index(self.embeddings)
 
@@ -72,7 +73,7 @@ class SimpleVectorStore:
             return [
                 (self.records[int(index)], float(score))
                 for score, index in zip(scores[0], indexes[0])
-                if index >= 0 and score > 0
+                if index >= 0 and score >= self.min_relevance
             ]
         query_vector = self._vectorize(query)
         ranked = sorted(
@@ -81,4 +82,4 @@ class SimpleVectorStore:
             reverse=True,
         )
         ranked = [(index, self._cosine(query_vector, vector)) for index, vector in ranked]
-        return [(self.records[index], float(score)) for index, score in ranked[:limit] if score > 0]
+        return [(self.records[index], float(score)) for index, score in ranked[:limit] if score >= self.min_relevance]

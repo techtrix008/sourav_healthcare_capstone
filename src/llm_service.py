@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+from functools import lru_cache
 from typing import List, Literal, Optional
 
 from langchain_openai import ChatOpenAI
@@ -88,6 +89,19 @@ class SpecialtyDecision(BaseModel):
 class SafetyTriage(BaseModel):
     needs_urgent_action_guidance: bool
     guidance: str
+    reason: str
+
+
+class AgentIntentClassification(BaseModel):
+    """Grouped intent flags used by the agent planner/normalizer."""
+
+    report_intent: bool = Field(description="User asks for stored reports, labs, tests, or medical records.")
+    patient_record_intent: bool = Field(description="User asks a targeted question about patient clinical history, stored notes, symptoms, diagnosis, medication, or interactions.")
+    entity_lookup_intent: bool = Field(description="User asks who/show details for a named system entity.")
+    general_symptom_intent: bool = Field(description="User asks general symptom guidance without a patient record request.")
+    safety_flag: bool = Field(description="User message may need urgent safety guidance.")
+    safety_guidance: str = Field(default="", description="Concise urgent-action guidance when safety_flag is true.")
+    confidence: float = Field(ge=0, le=1, description="Overall classification confidence.")
     reason: str
 
 
@@ -195,6 +209,43 @@ def classify_query_context(
                 f"Known doctors: {doctor_list}\n"
                 f"Recent conversation:\n{conversation or 'none'}\n\n"
                 f"User query: {query}",
+            ),
+        ]
+    )
+
+
+@lru_cache(maxsize=128)
+def classify_agent_intents(
+    query: str,
+    context_scope: str = "",
+    selected_patient_name: str = "",
+    selected_doctor_name: str = "",
+    conversation: str = "",
+) -> AgentIntentClassification:
+    """Classify all agent-normalization intents in one cached LLM call."""
+    llm = get_llm().with_structured_output(AgentIntentClassification)
+    return llm.invoke(
+        [
+            (
+                "system",
+                "You are a multi-intent classifier for a healthcare administration assistant. "
+                "Classify all intent flags in one response. Be strict: report_intent is only for stored "
+                "reports, lab results, test results, investigations, or medical records from the local system. "
+                "patient_record_intent is for targeted questions about one patient's stored clinical history, symptoms, "
+                "diagnosis, medication, notes, or interactions, but not when the user explicitly asks for reports/tests "
+                "and not for appointment listing or appointment booking actions. "
+                "entity_lookup_intent is for identifying or showing details for a named patient, doctor, provider, "
+                "or local system entity. general_symptom_intent is for general health guidance that is not asking "
+                "to retrieve a patient's records and not asking to book an appointment. safety_flag is true for "
+                "possible emergencies or red flags. Never invent local patient or doctor names.",
+            ),
+            (
+                "user",
+                f"Scope: {context_scope or 'unknown'}\n"
+                f"Selected patient: {selected_patient_name or 'none'}\n"
+                f"Selected doctor: {selected_doctor_name or 'none'}\n"
+                f"Recent conversation:\n{conversation or 'none'}\n\n"
+                f"Query: {query}",
             ),
         ]
     )

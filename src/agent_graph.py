@@ -23,19 +23,16 @@ from .data_loader import load_excel_records
 from .disease_search import search_medical_info
 from .evaluator import evaluate_agent_run
 from .llm_service import (
+    AgentIntentClassification,
     AgentPlan,
+    PlanStep,
     answer_scoped_context_question,
     answer_patient_record_question,
-    classify_entity_lookup_intent,
-    classify_general_symptom_advice_intent,
-    classify_patient_record_question_intent,
-    classify_query_context,
-    classify_report_intent,
+    classify_agent_intents,
     classify_specialty,
     general_answer_with_llm,
     has_openai_key,
     plan_with_llm,
-    triage_safety,
 )
 from .logger import append_jsonl
 from .patient_store import PatientStore
@@ -141,57 +138,83 @@ def _insert_plan_step_before_final(plan_model: AgentPlan, task: str, reason: str
     return _renumber_steps(plan_model)
 
 
-def _has_stored_report_intent(query: str) -> bool:
+def _heuristic_agent_intents(query: str) -> AgentIntentClassification:
+    """Local fallback when intent classification cannot call the LLM."""
+    query_l = query.lower()
+    report_words = {"report", "reports", "lab", "labs", "test", "tests", "result", "results", "investigation"}
+    record_words = {"history", "symptom", "symptoms", "summary", "record", "records", "diagnosis", "medication"}
+    entity_phrases = ("who is", "show details", "tell me about", "details for")
+    symptom_words = {"pain", "ache", "fever", "cough", "nausea", "dizzy", "rash", "headache"}
+    urgent_words = {"chest pain", "unconscious", "fainting", "stroke", "severe bleeding", "cannot breathe"}
+    return AgentIntentClassification(
+        report_intent=any(word in query_l for word in report_words),
+        patient_record_intent=any(word in query_l for word in record_words),
+        entity_lookup_intent=any(phrase in query_l for phrase in entity_phrases),
+        general_symptom_intent=any(word in query_l for word in symptom_words),
+        safety_flag=any(word in query_l for word in urgent_words),
+        safety_guidance="Seek urgent medical care now if symptoms are severe, sudden, or life-threatening."
+        if any(word in query_l for word in urgent_words)
+        else "",
+        confidence=0.35,
+        reason="Fallback keyword classification because LLM intent classification was unavailable.",
+    )
+
+
+def _get_agent_intents(
+    query: str,
+    context_scope: str,
+    selected_patient_name: str | None,
+    selected_doctor_name: str | None,
+    conversation: str,
+) -> AgentIntentClassification:
+    """Return cached LLM intent flags, with a deterministic local fallback."""
     try:
-        report_intent = classify_report_intent(query)
-    except Exception:
-        return False
-    return bool(report_intent and report_intent.asks_for_stored_reports)
-
-
-def _has_patient_record_question_intent(query: str) -> bool:
-    try:
-        record_intent = classify_patient_record_question_intent(query)
-    except Exception:
-        return False
-    return bool(record_intent and record_intent.asks_patient_record_question)
-
-
-def _normalize_report_plan(plan_model: AgentPlan, query: str) -> AgentPlan:
-    """Force report/test-result requests onto the stored-report path."""
-    has_operational_task = any(step.task in OPERATIONAL_APPOINTMENT_TASKS for step in plan_model.steps)
-    already_has_report_task = any(step.task == "retrieve_patient_reports" for step in plan_model.steps)
-
-    if has_operational_task and not already_has_report_task:
-        return plan_model
-    if not _has_stored_report_intent(query):
-        return plan_model
-    if not plan_model.steps:
-        return plan_model
-    for step in plan_model.steps:
-        if step.task == "retrieve_medical_information":
-            step.task = "retrieve_patient_reports"
-            step.reason = "The user asked for reports/test results from stored patient records."
-    if not any(step.task == "retrieve_patient_reports" for step in plan_model.steps):
-        plan_model = _insert_plan_step_before_final(
-            plan_model,
-            "retrieve_patient_reports",
-            "The user asked for stored reports/test results.",
+        return classify_agent_intents(
+            query,
+            context_scope=context_scope,
+            selected_patient_name=selected_patient_name or "",
+            selected_doctor_name=selected_doctor_name or "",
+            conversation=conversation,
         )
-    plan_model.needs_patient = True
-    return _renumber_steps(plan_model)
+    except Exception:
+        return _heuristic_agent_intents(query)
 
 
-def _remove_unrequested_report_steps(plan_model: AgentPlan, query: str) -> AgentPlan:
-    """Prevent a previous report intent from polluting appointment or doctor queries."""
-    has_operational_task = any(step.task in OPERATIONAL_APPOINTMENT_TASKS for step in plan_model.steps)
-    has_report_task = any(step.task == "retrieve_patient_reports" for step in plan_model.steps)
-    if not has_operational_task or not has_report_task:
-        return plan_model
-    if _has_stored_report_intent(query):
-        return plan_model
-    plan_model.steps = [step for step in plan_model.steps if step.task != "retrieve_patient_reports"]
-    return _renumber_steps(plan_model)
+def _fallback_plan(query: str, intents: AgentIntentClassification, context_scope: str) -> AgentPlan:
+    """Create a small local plan when the LLM planner is unavailable."""
+    steps: list[PlanStep] = []
+    needs_patient = context_scope == CONTEXT_PATIENT
+    query_l = query.lower()
+    asks_appointments = any(word in query_l for word in ("appointment", "appointments", "booking", "booked", "schedule"))
+
+    if context_scope == CONTEXT_SYSTEM:
+        steps.append(PlanStep(step=1, task="list_all_appointments", reason="Fallback system-wide query plan."))
+    elif context_scope == CONTEXT_DOCTOR:
+        steps.append(PlanStep(step=1, task="list_doctor_appointments", reason="Fallback doctor-scoped query plan."))
+    elif context_scope == CONTEXT_PATIENT and asks_appointments:
+        steps.append(PlanStep(step=1, task="list_appointments", reason="Fallback patient appointment query plan."))
+    elif intents.report_intent:
+        needs_patient = True
+        steps.append(PlanStep(step=1, task="retrieve_patient_reports", reason="Fallback stored-report query plan."))
+    elif intents.patient_record_intent or context_scope == CONTEXT_PATIENT:
+        needs_patient = True
+        steps.append(PlanStep(step=1, task="retrieve_patient_context", reason="Fallback patient-record query plan."))
+    elif intents.entity_lookup_intent:
+        steps.append(PlanStep(step=1, task="lookup_entity_details", reason="Fallback entity lookup query plan."))
+    elif intents.general_symptom_intent:
+        steps.append(PlanStep(step=1, task="retrieve_medical_information", reason="Fallback general medical information query plan."))
+    else:
+        steps.append(PlanStep(step=1, task="answer_general", reason="Fallback direct-answer query plan."))
+
+    steps.append(PlanStep(step=len(steps) + 1, task="final_response", reason="Compose the final answer."))
+    return AgentPlan(
+        needs_patient=needs_patient,
+        patient_name=None,
+        doctor_name=None,
+        condition_or_topic=query,
+        direct_answer=None,
+        steps=steps,
+    )
 
 
 def _entity_query_terms(query: str) -> list[str]:
@@ -264,58 +287,48 @@ def find_entity_matches(query: str, store: PatientStore) -> list[dict[str, Any]]
     return matches
 
 
-def _normalize_entity_lookup_plan(plan_model: AgentPlan, query: str, store: PatientStore) -> AgentPlan:
-    if _has_stored_report_intent(query):
-        return plan_model
+def _normalize_plan(
+    plan_model: AgentPlan,
+    query: str,
+    store: PatientStore,
+    intents: AgentIntentClassification,
+    context_scope: str,
+) -> AgentPlan:
+    """Apply all plan corrections from one unified intent result."""
+    if context_scope == CONTEXT_SYSTEM:
+        for step in plan_model.steps:
+            if step.task == "list_appointments":
+                step.task = "list_all_appointments"
+                step.reason = "The user asked for all appointments across the system."
+        plan_model.needs_patient = False
+        plan_model.patient_name = None
+        return _renumber_steps(plan_model)
 
-    if _has_patient_record_question_intent(query):
-        return plan_model
+    step_type = type(plan_model.steps[0]) if plan_model.steps else None
+    task_names = {step.task for step in plan_model.steps}
+    has_operational_task = any(step.task in OPERATIONAL_APPOINTMENT_TASKS for step in plan_model.steps)
 
-    if any(step.task == "lookup_entity_details" for step in plan_model.steps):
-        return plan_model
-    try:
-        entity_intent = classify_entity_lookup_intent(query)
-    except Exception:
-        entity_intent = None
-    if not entity_intent or not entity_intent.asks_for_entity_lookup or not find_entity_matches(query, store):
-        return plan_model
-    plan_model = _insert_plan_step_before_final(
-        plan_model,
-        "lookup_entity_details",
-        "The user asked who a named person is; search patients and doctors.",
-    )
-    plan_model.needs_patient = False
-    return plan_model
+    if has_operational_task and "retrieve_patient_reports" in task_names and not intents.report_intent:
+        plan_model.steps = [step for step in plan_model.steps if step.task != "retrieve_patient_reports"]
+        task_names = {step.task for step in plan_model.steps}
 
-
-def _normalize_plan_with_context(plan_model: AgentPlan, query: str, store: PatientStore) -> AgentPlan:
-    """Align the LLM plan with context classifiers before tools run."""
-    if _has_stored_report_intent(query):
-        return plan_model
-
-    if _has_patient_record_question_intent(query):
-        step_type = type(plan_model.steps[0]) if plan_model.steps else None
-        if step_type:
-            plan_model.steps = [
-                step_type(
-                    step=1,
-                    task="retrieve_patient_context",
-                    reason="The user asked a targeted question about the patient's stored record/history.",
-                ),
-                step_type(
-                    step=2,
-                    task="final_response",
-                    reason="Answer only the requested patient-record question.",
-                ),
-            ]
+    if intents.patient_record_intent and not intents.report_intent and step_type:
+        plan_model.steps = [
+            step_type(
+                step=1,
+                task="retrieve_patient_context",
+                reason="The user asked a targeted question about the patient's stored record/history.",
+            ),
+            step_type(
+                step=2,
+                task="final_response",
+                reason="Answer only the requested patient-record question.",
+            ),
+        ]
         plan_model.needs_patient = True
-        return plan_model
+        return _renumber_steps(plan_model)
 
-    try:
-        advice_intent = classify_general_symptom_advice_intent(query)
-    except Exception:
-        advice_intent = None
-    if advice_intent and advice_intent.asks_for_general_symptom_advice:
+    if intents.general_symptom_intent and context_scope != CONTEXT_PATIENT:
         plan_model.needs_patient = False
         plan_model.patient_name = None
         for step in plan_model.steps:
@@ -326,7 +339,6 @@ def _normalize_plan_with_context(plan_model: AgentPlan, query: str, store: Patie
                 step.task = "retrieve_medical_information"
                 step.reason = "The user asked for general symptom guidance without a patient-specific administrative action."
         task_names = {step.task for step in plan_model.steps}
-        step_type = type(plan_model.steps[0]) if plan_model.steps else None
         if step_type and "retrieve_medical_information" not in task_names:
             plan_model.steps.insert(
                 0,
@@ -338,24 +350,33 @@ def _normalize_plan_with_context(plan_model: AgentPlan, query: str, store: Patie
             )
         return _renumber_steps(plan_model)
 
-    try:
-        decision = classify_query_context(
-            query,
-            [patient.name for patient in store.list_patients()],
-            doctor_names=[doctor["name"] for doctor in load_doctors()],
+    if intents.report_intent and not (has_operational_task and "retrieve_patient_reports" not in task_names):
+        for step in plan_model.steps:
+            if step.task == "retrieve_medical_information":
+                step.task = "retrieve_patient_reports"
+                step.reason = "The user asked for reports/test results from stored patient records."
+        if step_type and not any(step.task == "retrieve_patient_reports" for step in plan_model.steps):
+            plan_model = _insert_plan_step_before_final(
+                plan_model,
+                "retrieve_patient_reports",
+                "The user asked for stored reports/test results.",
+            )
+        plan_model.needs_patient = True
+
+    if (
+        intents.entity_lookup_intent
+        and not intents.report_intent
+        and not intents.patient_record_intent
+        and not any(step.task == "lookup_entity_details" for step in plan_model.steps)
+        and find_entity_matches(query, store)
+    ):
+        plan_model = _insert_plan_step_before_final(
+            plan_model,
+            "lookup_entity_details",
+            "The user asked who a named person is; search patients and doctors.",
         )
-    except Exception:
-        return plan_model
-    if decision.selected_patient_name:
-        plan_model.patient_name = decision.selected_patient_name
-    if decision.scope != CONTEXT_SYSTEM:
-        return plan_model
-    for step in plan_model.steps:
-        if step.task == "list_appointments":
-            step.task = "list_all_appointments"
-            step.reason = "The user asked for all appointments across the system."
-    plan_model.needs_patient = False
-    plan_model.patient_name = None
+        plan_model.needs_patient = False
+
     return _renumber_steps(plan_model)
 
 
@@ -439,6 +460,74 @@ def _doctor_by_name(name: str | None) -> dict[str, Any] | None:
     return None
 
 
+def _fallback_local_response(
+    query: str,
+    *,
+    context_scope: str = "",
+    selected_patient_name: str | None = None,
+    selected_doctor_name: str | None = None,
+    error: str = "",
+) -> dict[str, Any]:
+    """Return a grounded local answer when an LLM call fails mid-turn."""
+    store, _ = build_runtime()
+    tool_logs = [{"tool": "llm_fallback", "success": False, "message": error or "LLM call was unavailable"}]
+    plan = [{"step": 1, "task": "final_response", "reason": "Used local fallback because the LLM call failed."}]
+    answer = "I could not produce a reliable LLM response for this request right now."
+    patient = None
+    appointment_list: list[dict[str, Any]] = []
+
+    if context_scope == CONTEXT_SYSTEM:
+        patients = store.list_patients()
+        doctors = load_doctors()
+        appointments = list_all_appointments()
+        answer = (
+            "I could not reach the LLM, so here is the grounded system snapshot I can provide locally:\n"
+            f"- Patients in the system: {len(patients)}\n"
+            f"- Doctors in the system: {len(doctors)}\n"
+            f"- Appointments in the system: {len(appointments)}"
+        )
+    elif context_scope == CONTEXT_PATIENT and selected_patient_name:
+        patient = store.get_patient_by_name(selected_patient_name)
+        if patient:
+            appointment_list = list_appointments_for_patient(patient.name)
+            answer = (
+                "I could not reach the LLM, so here is the grounded patient snapshot I can provide locally:\n"
+                f"- Patient: {patient.name}\n"
+                f"- Age: {patient.age or 'Unknown'}\n"
+                f"- Gender: {patient.gender or 'Unknown'}\n"
+                f"- Summary: {patient.summary or 'No stored summary available.'}\n"
+                f"- Appointments: {len(appointment_list)}"
+            )
+        else:
+            answer = f"I could not reach the LLM, and I could not find a patient named {selected_patient_name}."
+    elif context_scope == CONTEXT_DOCTOR and selected_doctor_name:
+        doctor = _doctor_by_name(selected_doctor_name)
+        if doctor:
+            appointment_list = list_appointments_for_doctor(doctor.get("name", selected_doctor_name))
+            slots = doctor.get("available_slots", [])
+            answer = (
+                "I could not reach the LLM, so here is the grounded doctor snapshot I can provide locally:\n"
+                f"- Doctor: {doctor.get('name')}\n"
+                f"- Specialty: {doctor.get('specialty')}\n"
+                f"- Location: {doctor.get('location')}\n"
+                f"- Open slots: {len(slots)}\n"
+                f"- Appointments: {len(appointment_list)}"
+            )
+        else:
+            answer = f"I could not reach the LLM, and I could not find a doctor named {selected_doctor_name}."
+    elif error:
+        answer = f"{answer} Reason: {error}"
+
+    return _finalize_direct_answer(
+        query,
+        plan,
+        answer,
+        patient=patient.__dict__ if patient else None,
+        appointment_list=appointment_list,
+        tool_logs=tool_logs,
+    )
+
+
 def _run_agent_impl(
     query: str,
     plan_model: AgentPlan | None = None,
@@ -447,34 +536,42 @@ def _run_agent_impl(
     selected_patient_name: str | None = None,
     selected_doctor_name: str | None = None,
     conversation: str = "",
+    scoped_context: str = "",
 ) -> dict[str, Any]:
     """Execute a planned turn: normalize plan, call tools, compose answer, and evaluate."""
     store, vector_store = build_runtime()
     selected_doctor = _doctor_by_name(selected_doctor_name)
-    scoped_context = ""
+    selected_patient = None
     if selected_patient_name:
         selected_patient = store.get_patient_by_name(selected_patient_name)
-        if selected_patient:
+        if selected_patient and not scoped_context:
             scoped_context = patient_context(selected_patient)
-    if selected_doctor:
+    if selected_doctor and not scoped_context:
         scoped_context = doctor_context(selected_doctor)
-    plan_model = plan_model or plan_with_llm(
+    intents = _get_agent_intents(
         query,
-        active_patient=selected_patient_name,
-        active_doctor=selected_doctor_name,
-        conversation=conversation,
-        scoped_context=scoped_context,
+        context_scope,
+        selected_patient_name,
+        selected_doctor_name,
+        conversation,
     )
+    if plan_model is None:
+        try:
+            plan_model = plan_with_llm(
+                query,
+                active_patient=selected_patient_name,
+                active_doctor=selected_doctor_name,
+                conversation=conversation,
+                scoped_context=scoped_context,
+            )
+        except Exception:
+            plan_model = _fallback_plan(query, intents, context_scope)
     if selected_patient_name:
         plan_model.patient_name = selected_patient_name
         plan_model.needs_patient = True
     if selected_doctor_name:
         plan_model.doctor_name = selected_doctor_name
-    if context_scope not in {CONTEXT_GENERIC, CONTEXT_SYSTEM}:
-        plan_model = _normalize_plan_with_context(plan_model, query, store)
-    plan_model = _normalize_entity_lookup_plan(plan_model, query, store)
-    plan_model = _normalize_report_plan(plan_model, query)
-    plan_model = _remove_unrequested_report_steps(plan_model, query)
+    plan_model = _normalize_plan(plan_model, query, store, intents, context_scope)
     plan = [step.model_dump() for step in plan_model.steps]
     tool_logs: list[dict[str, Any]] = []
 
@@ -497,6 +594,13 @@ def _run_agent_impl(
         patient_summary = "No matching patient record was found in the attached dataset."
     else:
         patient_summary = "No patient lookup was needed for this request."
+
+    cached_patient_context = ""
+    if patient:
+        cached_patient_context = scoped_context if selected_patient_name else ""
+        if not cached_patient_context:
+            cached_patient_context = patient_context(patient)
+    cached_doctor_context = scoped_context if selected_doctor else ""
 
     appointment = {}
     appointment_workflow = {}
@@ -631,7 +735,15 @@ def _run_agent_impl(
     sections = []
     patient_record_only_tasks = {"retrieve_patient_context", "answer_general", "final_response"}
     if patient and "retrieve_patient_context" in task_names and task_names <= patient_record_only_tasks:
-            sections.append(answer_patient_record_question(query, patient_context(patient), conversation))
+        try:
+            sections.append(answer_patient_record_question(query, cached_patient_context, conversation))
+        except Exception as exc:
+            return _fallback_local_response(
+                query,
+                context_scope=CONTEXT_PATIENT,
+                selected_patient_name=patient.name,
+                error=str(exc),
+            )
     elif needs_patient and not patient:
         sections.append("I could not find a matching patient in the records.")
     if appointment:
@@ -755,21 +867,26 @@ def _run_agent_impl(
     if medical_info:
         sources = "\n".join(f"- {source}" for source in medical_info["sources"])
         sections.append(f"Medical information: {medical_info['condition']}\n{medical_info['summary']}\nSources:\n{sources}")
-    try:
-        safety_triage = triage_safety(query)
-    except Exception:
-        safety_triage = None
-    if safety_triage and safety_triage.needs_urgent_action_guidance:
-        sections.append(f"Action: {safety_triage.guidance}")
+    if intents.safety_flag and intents.safety_guidance:
+        sections.append(f"Action: {intents.safety_guidance}")
     if not sections and plan_model.direct_answer:
         sections.append(plan_model.direct_answer)
     if not sections or ("answer_general" in task_names and not (task_names - {"answer_general", "final_response"})):
         context_blocks = [*sections]
-        if patient:
-            context_blocks.append(patient_context(patient))
-        if selected_doctor:
-            context_blocks.append(doctor_context(selected_doctor))
-        sections = [general_answer_with_llm(query, "\n\n".join(context_blocks), conversation)]
+        if cached_patient_context:
+            context_blocks.append(cached_patient_context)
+        if cached_doctor_context:
+            context_blocks.append(cached_doctor_context)
+        try:
+            sections = [general_answer_with_llm(query, "\n\n".join(context_blocks), conversation)]
+        except Exception as exc:
+            return _fallback_local_response(
+                query,
+                context_scope=context_scope,
+                selected_patient_name=selected_patient_name,
+                selected_doctor_name=selected_doctor_name,
+                error=str(exc),
+            )
     if patient and sections and not sections[0].startswith("Patient details:"):
         sections[0] = f"[{patient.name}] {sections[0]}"
     result = {
@@ -815,6 +932,7 @@ def _build_graph():
             selected_patient_name=state.get("selected_patient_name"),
             selected_doctor_name=state.get("selected_doctor_name"),
             conversation=state.get("conversation", ""),
+            scoped_context=state.get("scoped_context", ""),
         )
         return result
 
@@ -882,11 +1000,8 @@ def run_agent(
         if context_scope == CONTEXT_GENERIC:
             medical_info = {}
             tool_logs = []
-            try:
-                advice_intent = classify_general_symptom_advice_intent(query)
-            except Exception:
-                advice_intent = None
-            if advice_intent and advice_intent.asks_for_general_symptom_advice:
+            advice_intent = _get_agent_intents(query, context_scope, selected_patient_name, selected_doctor_name, conversation)
+            if advice_intent.general_symptom_intent:
                 medical_info = search_medical_info(query)
                 tool_logs.append(
                     {
@@ -899,7 +1014,10 @@ def run_agent(
             if medical_info:
                 sources = "\n".join(f"- {source}" for source in medical_info["sources"])
                 context = f"Medical information: {medical_info['condition']}\n{medical_info['summary']}\nSources:\n{sources}"
-            answer = general_answer_with_llm(query, context, conversation)
+            try:
+                answer = general_answer_with_llm(query, context, conversation)
+            except Exception as exc:
+                return _fallback_local_response(query, context_scope=context_scope, error=str(exc))
             result = _finalize_direct_answer(
                 query,
                 [{"step": 1, "task": "answer_general", "reason": "Generic context selected by LLM router."}],
@@ -911,7 +1029,10 @@ def run_agent(
 
         if context_scope == CONTEXT_SYSTEM:
             context = system_context(store)
-            answer = answer_scoped_context_question(query, CONTEXT_SYSTEM, context, conversation)
+            try:
+                answer = answer_scoped_context_question(query, CONTEXT_SYSTEM, context, conversation)
+            except Exception as exc:
+                return _fallback_local_response(query, context_scope=context_scope, error=str(exc))
             return _finalize_direct_answer(
                 query,
                 [{"step": 1, "task": "answer_general", "reason": "System context selected by LLM router."}],
@@ -927,6 +1048,22 @@ def run_agent(
             selected_doctor = _doctor_by_name(selected_doctor_name)
             if selected_doctor:
                 scoped_context = doctor_context(selected_doctor)
+                action_terms = {"book", "schedule", "reschedule", "cancel", "clear", "delete"}
+                if not any(term in query.lower() for term in action_terms):
+                    try:
+                        answer = answer_scoped_context_question(query, CONTEXT_DOCTOR, scoped_context, conversation)
+                    except Exception as exc:
+                        return _fallback_local_response(
+                            query,
+                            context_scope=context_scope,
+                            selected_doctor_name=selected_doctor_name,
+                            error=str(exc),
+                        )
+                    return _finalize_direct_answer(
+                        query,
+                        [{"step": 1, "task": "answer_general", "reason": "Doctor context selected by LLM router."}],
+                        answer,
+                    )
 
         graph = _build_graph()
         if graph is None:
@@ -936,6 +1073,7 @@ def run_agent(
                 selected_patient_name=selected_patient_name,
                 selected_doctor_name=selected_doctor_name,
                 conversation=conversation,
+                scoped_context=scoped_context,
             )
         final_state = graph.invoke(
             {
@@ -949,19 +1087,10 @@ def run_agent(
         )
         return final_state
     except Exception as exc:
-        return {
-            "query": query,
-            "plan": [{"step": 1, "task": "final_response", "reason": "LLM workflow failed"}],
-            "patient": None,
-            "appointment": {},
-            "appointment_list": [],
-            "active_appointment_doctors": [],
-            "doctor_list": [],
-            "entity_matches": [],
-            "appointment_workflow": {},
-            "medical_info": {},
-            "patient_reports": {},
-            "tool_logs": [{"tool": "llm_graph", "success": False, "message": str(exc)}],
-            "final_answer": f"I could not produce a reliable LLM response for this request. Reason: {exc}",
-            "evaluation": {"score": 0, "critique": str(exc)},
-        }
+        return _fallback_local_response(
+            query,
+            context_scope=context_scope,
+            selected_patient_name=selected_patient_name,
+            selected_doctor_name=selected_doctor_name,
+            error=str(exc),
+        )
