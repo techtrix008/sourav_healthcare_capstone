@@ -3,11 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from langchain.evaluation.qa import QAEvalChain
-
 from .config import EVALUATION_LOG_FILE
 from .llm_service import evaluate_with_llm, get_llm, has_openai_key
 from .logger import append_jsonl
+
+try:
+    from langchain.evaluation.qa import QAEvalChain
+except Exception:  # pragma: no cover - optional evaluator dependency.
+    QAEvalChain = None
 
 
 def evaluate_agent_run(query: str, result: dict[str, Any], log_path: Path = EVALUATION_LOG_FILE) -> dict[str, Any]:
@@ -45,12 +48,15 @@ def evaluate_agent_run(query: str, result: dict[str, Any], log_path: Path = EVAL
             llm_eval = evaluate_with_llm(query, result.get("final_answer", ""), tool_summary)
             qa_grade = {}
             try:
-                qa_chain = QAEvalChain.from_llm(get_llm())
-                reference_answer = tool_summary or result.get("final_answer", "")
-                qa_grade = qa_chain.evaluate(
-                    examples=[{"query": query, "answer": reference_answer}],
-                    predictions=[{"result": result.get("final_answer", "")}],
-                )[0]
+                if QAEvalChain is None:
+                    qa_grade = {"note": "QAEvalChain unavailable because the optional langchain package is not installed."}
+                else:
+                    qa_chain = QAEvalChain.from_llm(get_llm())
+                    reference_answer = tool_summary or result.get("final_answer", "")
+                    qa_grade = qa_chain.evaluate(
+                        examples=[{"query": query, "answer": reference_answer}],
+                        predictions=[{"result": result.get("final_answer", "")}],
+                    )[0]
             except Exception as qa_exc:
                 qa_grade = {"note": f"QAEvalChain unavailable for this turn: {qa_exc}"}
             evaluation.update(
