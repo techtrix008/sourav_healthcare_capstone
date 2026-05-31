@@ -646,5 +646,149 @@
       "entry_type": "patient_summary_review",
       "captured_at": "2026-05-31T09:12:47"
     }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0037",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: show me all the notes and chat history for Ramesh",
+    "raw_text": "Timestamp: 2026-05-31T09:36:47\nUser: show me all the notes and chat history for Ramesh\nAssistant: [Ramesh Kulkarni] Here are all the notes and chat history for Ramesh Kulkarni:\n\n- Patient presents for routine checkup with a history of hypertension. Vitals are stable. Continue current medication and recommend lifestyle modifications. Routine labs ordered and return in 6 months.\n- Diagnosis: Essential Hypertension (I10).\n- Subjective: Ramesh presents for routine checkup. No current complaints. History of hypertension. Regular on medication.\n- Objective: Vitals: BP 130/84, Pulse 76, Temp 98.4\u00b0F. Cardiovascular and respiratory exams normal. No peripheral edema.\n- Assessment: Diagnosis: Essential Hypertension (I10).\n- Plan: Continue Telmisartan 40mg OD. Recommend lifestyle modifications. Routine labs ordered. Return in 6 months.\n\nChat history entries related to Ramesh:\n- Multiple queries about last symptoms or complaints of Ramesh, with the consistent answer that he had no current complaints at his last routine checkup and has a history of hypertension, regular on medication.\n- User asked for all details, test results, and current appointments related to Ramesh.\n- User also asked general questions like \"Tell me about Ramesh\" and \"Let's now speak about Ramesh.\"\n\nIf you need any specific note or detail from this history, please let me know.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:36:47",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:36:47"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0038",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: which doctor he last see",
+    "raw_text": "Timestamp: 2026-05-31T09:37:44\nUser: which doctor he last see\nAssistant: [Ramesh Kulkarni] The records do not specify the name of the doctor Ramesh Kulkarni last saw.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:37:44",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:37:44"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0039",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Ramesh is having upset stomach",
+    "raw_text": "Timestamp: 2026-05-31T09:38:25\nUser: Ramesh is having upset stomach\nAssistant: [Ramesh Kulkarni] Ramesh Kulkarni's recent records do not mention an upset stomach or related symptoms. If he is currently experiencing an upset stomach, he may need to consult a Gastroenterologist. \n\nAvailable Gastroenterologist options include:\n- Dr. Nisha Kapoor in Pune, with available slots on 2026-05-26 at 10:30 and 2026-05-28 at 13:00.\n\nWould you like to schedule an appointment with Dr. Nisha Kapoor or need further assistance?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:38:25",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:38:25"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0040",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Report Review: Please retrieve and review the recent lab results for Ramesh Kulkarni to check for any abnormalities related to his current symptoms.",
+    "raw_text": "Timestamp: 2026-05-31T09:39:01\nUser: Please retrieve and review the recent lab results for Ramesh Kulkarni to check for any abnormalities related to his current symptoms.\nAssistant: [Ramesh Kulkarni] ## Stored medical reports/test results for Ramesh Kulkarni\n\n### Report 1\n\n| Field | Value |\n|---|---|\n| Source | sample_report_ramesh.pdf |\n| Visit/upload date | 02/28/2024 |\n| Diagnosis | Essential Hypertension (I10) |\n\n**Subjective**\n- Ramesh presents for routine checkup\n- No current complaints\n- History of hypertension\n- Regular on medication\n\n**Objective**\n- Vitals: BP 130/84, Pulse 76, Temp 98.4\u00b0F\n- Cardiovascular and respiratory exams normal\n- No peripheral edema\n\n**Assessment**\n- Diagnosis: Essential Hypertension (I10)\n\n**Plan**\n- Continue Telmisartan 40mg OD\n- Recommend lifestyle modifications\n- Routine labs ordered\n- Return in 6 months",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:39:01",
+      "entry_type": "report_review",
+      "captured_at": "2026-05-31T09:39:01"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0041",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Appointment: Please schedule an appointment for Ramesh Kulkarni with Dr. Nisha Kapoor, Gastroenterologist, at the earliest available slot.",
+    "raw_text": "Timestamp: 2026-05-31T09:41:45\nUser: Please schedule an appointment for Ramesh Kulkarni with Dr. Nisha Kapoor, Gastroenterologist, at the earliest available slot.\nAssistant: [Ramesh Kulkarni] I can help book that. What problem or symptoms should I use? After that, I will suggest a doctor and show a calendar for the preferred date.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:41:45",
+      "entry_type": "appointment",
+      "captured_at": "2026-05-31T09:41:45"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0042",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Appointment: Please schedule an appointment for Ramesh Kulkarni with Dr. Nisha Kapoor, Gastroenterologist, at the earliest available slot.",
+    "raw_text": "Timestamp: 2026-05-31T09:51:39\nUser: Please schedule an appointment for Ramesh Kulkarni with Dr. Nisha Kapoor, Gastroenterologist, at the earliest available slot.\nAssistant: Based on the symptoms, I suggest a Nephrologist. Use the doctor and calendar selector below to continue with the suggested doctor type or choose another available doctor.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:51:39",
+      "entry_type": "appointment",
+      "captured_at": "2026-05-31T09:51:39"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0043",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Patient Summary Review: Ramesh is having knee pain",
+    "raw_text": "Timestamp: 2026-05-31T09:52:32\nUser: Ramesh is having knee pain\nAssistant: [Ramesh Kulkarni] Ramesh Kulkarni's recent records do not mention knee pain. If he is currently experiencing knee pain, he may need to consult an Orthopedist.\n\nAvailable Orthopedist options include:\n- Dr. Vikram Shah in Pune, with available slots on 2026-05-25 at 15:30, 2026-05-27 at 10:00, and 2026-05-29 at 11:30.\n\nWould you like to schedule an appointment with Dr. Vikram Shah or need further assistance?",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:52:32",
+      "entry_type": "patient_summary_review",
+      "captured_at": "2026-05-31T09:52:32"
+    }
+  },
+  {
+    "patient_id": "user-medical-ramesh-kulkarni-0044",
+    "name": "Ramesh Kulkarni",
+    "age": null,
+    "gender": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "summary": "Appointment: Please schedule an appointment for Ramesh Kulkarni with Dr. Vikram Shah, Orthopedist, at the earliest available slot.",
+    "raw_text": "Timestamp: 2026-05-31T09:53:16\nUser: Please schedule an appointment for Ramesh Kulkarni with Dr. Vikram Shah, Orthopedist, at the earliest available slot.\nAssistant: [Ramesh Kulkarni] Appointment:\n- Booked with Dr. Vikram Shah (Orthopedist) on 2026-05-25 15:30 at Pune.",
+    "metadata": {
+      "record_type": "patient_history_entry",
+      "source_file": "assistant_chat",
+      "uploaded_at": "2026-05-31T09:53:16",
+      "entry_type": "appointment",
+      "captured_at": "2026-05-31T09:53:16"
+    }
   }
 ]

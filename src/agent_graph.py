@@ -682,36 +682,58 @@ def _run_agent_impl(
         )
     if "book_appointment" in task_names:
         requested_date = _extract_requested_date(query)
+        earliest_requested = any(phrase in query.lower() for phrase in {"earliest", "first available", "next available", "soonest"})
+        specialty_context = f"Recent conversation:\n{conversation}\n\nLatest request:\n{query}"
         try:
-            specialty_decision = classify_specialty(query, available_specialties())
+            specialty_decision = classify_specialty(specialty_context, available_specialties())
         except Exception:
             specialty_decision = None
         has_problem_context = bool(specialty_decision and specialty_decision.has_sufficient_symptom_context)
         specialty = specialty_decision.specialty if specialty_decision and specialty_decision.specialty else ""
-        if not patient or not requested_date or not has_problem_context:
+        requested_doctor_name = plan_model.doctor_name or find_doctor_name_in_text(query)
+        requested_doctor = _doctor_by_name(requested_doctor_name)
+        has_time_preference = bool(requested_date or earliest_requested)
+        if not patient or not has_time_preference or not (has_problem_context or requested_doctor):
             missing = []
             if not patient:
                 missing.append("patient")
-            if not has_problem_context:
+            if not has_problem_context and not requested_doctor:
                 missing.append("problem or symptoms")
-            if not requested_date:
+            if not has_time_preference:
                 missing.append("preferred date")
             appointment_workflow = {
                 "status": "needs_details",
                 "patient_name": patient.name if patient else "",
-                "problem": query if has_problem_context else "",
-                "specialty": specialty,
+                "problem": specialty_context if has_problem_context else "",
+                "specialty": specialty or (requested_doctor or {}).get("specialty", ""),
                 "missing": missing,
                 "message": "I need a few more details before booking an appointment.",
             }
             tool_logs.append({"tool": "appointment_intake", "success": True, "message": f"Asked for: {', '.join(missing)}"})
         else:
-            availability = find_slots_for_specialty(specialty, requested_date)
-            slot = (availability["exact_matches"] or availability["alternate_matches"] or [None])[0]
+            if requested_doctor:
+                slots = requested_doctor.get("available_slots", [])
+                matching_slots = [slot for slot in slots if not requested_date or slot.startswith(requested_date)]
+                slot_value = (matching_slots or slots or [None])[0]
+                slot = (
+                    {
+                        "doctor_id": requested_doctor["doctor_id"],
+                        "doctor_name": requested_doctor["name"],
+                        "specialty": requested_doctor["specialty"],
+                        "location": requested_doctor["location"],
+                        "slot": slot_value,
+                    }
+                    if slot_value
+                    else None
+                )
+            else:
+                availability = find_slots_for_specialty(specialty, requested_date)
+                slot = (availability["exact_matches"] or availability["alternate_matches"] or [None])[0]
             if slot:
                 appointment = book_specific_appointment(patient.name, slot["doctor_id"], slot["slot"])
             else:
-                appointment = {"success": False, "message": f"No available slots for {specialty}."}
+                target = requested_doctor["name"] if requested_doctor else specialty
+                appointment = {"success": False, "message": f"No available slots for {target}."}
             tool_logs.append({"tool": "appointment_booking", "success": appointment.get("success", False), "message": appointment.get("message", "")})
 
     if "retrieve_patient_reports" in task_names:

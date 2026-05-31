@@ -384,7 +384,7 @@ def render_next_best_actions():
                     st.caption(f"{priority} | {prompt}")
                 with button_col:
                     if st.button("Run", key=f"next_best_action_{index}", use_container_width=True):
-                        run_chat_turn(prompt)
+                        st.session_state["queued_chat_prompt"] = prompt
                         st.rerun()
 
 
@@ -1458,8 +1458,10 @@ def render_app():
                 key="assistant_chat_input",
             )
             progress_slot = st.empty()
-            if prompt and prompt.strip():
-                run_chat_turn(prompt.strip(), progress_container=progress_slot)
+            queued_prompt = st.session_state.pop("queued_chat_prompt", "")
+            submitted_prompt = queued_prompt or prompt
+            if submitted_prompt and submitted_prompt.strip():
+                run_chat_turn(submitted_prompt.strip(), progress_container=progress_slot)
                 st.rerun()
 
             render_patient_selection_prompt()

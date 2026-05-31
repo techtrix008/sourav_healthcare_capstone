@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "appointment_id": "A0001",
+    "patient_name": "Ramesh Kulkarni",
+    "doctor_id": "D006",
+    "doctor_name": "Dr. Vikram Shah",
+    "specialty": "Orthopedist",
+    "location": "Pune",
+    "slot": "2026-05-25 15:30",
+    "status": "Booked"
+  }
+]
